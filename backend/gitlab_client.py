@@ -52,10 +52,31 @@ class GitLabClient:
         try:
             project = self.get_project(project_id)
             mr = project.mergerequests.get(mr_iid)
+            
+            # Debug: log MR state
+            logger.info(f"🔍 MR State: {mr.state}, Has conflicts: {mr.has_conflicts}, Mergeable: {getattr(mr, 'merge_status', 'unknown')}")
+            
+            # Get changes with retries
             changes = mr.changes()
+            
+            # Debug: log what we got
+            logger.info(f"📦 Changes keys: {list(changes.keys())}")
+            logger.info(f"📦 Changes type: {type(changes)}")
             
             # Extract changes
             file_changes = changes.get('changes', [])
+            
+            # If no changes, try diff
+            if not file_changes:
+                logger.warning("⚠️ No changes in mr.changes(), trying diffs...")
+                try:
+                    diffs = mr.diffs.list()
+                    if diffs:
+                        logger.info(f"📝 Found {len(diffs)} diffs")
+                        file_changes = [diff.attributes for diff in diffs]
+                except Exception as diff_err:
+                    logger.warning(f"⚠️ Could not get diffs: {diff_err}")
+            
             logger.info(f"📝 Got {len(file_changes)} file changes")
             
             return file_changes
