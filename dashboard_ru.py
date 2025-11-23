@@ -273,33 +273,33 @@ def load_recent_reviews():
 
 # Sidebar Navigation
 with st.sidebar:
-    st.markdown("### AI Code Review")
-    st.markdown("ForteBank Hackathon 2025")
+    st.markdown("### 🤖 AI Ревью Кода")
+    st.markdown("**ForteBank Hackathon 2025**")
     st.markdown("---")
     
     page = st.radio(
-        "Navigation",
-        ["Analytics", "Settings", "Team", "Learning"],
+        "Навигация",
+        ["📊 Аналитика", "⚙️ Настройки", "👥 Команда", "🧠 Обучение"],
         label_visibility="collapsed"
     )
     
     st.markdown("---")
-    st.markdown("**System Status**")
-    st.success("AI: Online")
-    st.success("GitLab: Connected")
-    st.info("Provider: Gemini 2.5 Flash")
+    st.markdown("**Статус системы**")
+    st.success("✅ AI: Онлайн")
+    st.success("✅ GitLab: Подключен")
+    st.info("💡 Провайдер: Gemini 2.5 Flash")
 
 # Main Content
-if page == "Analytics":
-    st.markdown('<div class="main-header">Analytics Dashboard</div>', unsafe_allow_html=True)
+if page == "📊 Аналитика":
+    st.markdown('<div class="main-header">📊 Панель Аналитики</div>', unsafe_allow_html=True)
     
     stats = load_stats()
     
     # Data source indicator
     if stats.get('is_real_data'):
-        st.success("Real-time data from backend")
+        st.success("📡 Отображаются реальные данные из backend")
     else:
-        st.warning("Demo mode - Connect database to see real data")
+        st.warning("🎨 Демо режим - Подключите БД для реальных данных")
     
     st.markdown("---")
     
@@ -310,7 +310,7 @@ if page == "Analytics":
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-value">{stats['total_mrs']}</div>
-            <div class="metric-label">Merge Requests</div>
+            <div class="metric-label">Проверено MR</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -318,15 +318,15 @@ if page == "Analytics":
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-value">{stats['total_comments']}</div>
-            <div class="metric-label">AI Comments</div>
+            <div class="metric-label">AI Комментариев</div>
         </div>
         """, unsafe_allow_html=True)
     
     with col3:
         st.markdown(f"""
         <div class="metric-card">
-            <div class="metric-value">{stats['time_saved_hours']}h</div>
-            <div class="metric-label">Time Saved</div>
+            <div class="metric-value">{stats['time_saved_hours']}ч</div>
+            <div class="metric-label">Время сэкономлено</div>
         </div>
         """, unsafe_allow_html=True)
     
@@ -334,11 +334,11 @@ if page == "Analytics":
         st.markdown(f"""
         <div class="metric-card">
             <div class="metric-value">{stats['avg_score']}/10</div>
-            <div class="metric-label">Avg Score</div>
+            <div class="metric-label">Средний Score</div>
         </div>
         """, unsafe_allow_html=True)
     
-    st.markdown('<div class="section-header">Recent Activity</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">🕒 Последняя активность</div>', unsafe_allow_html=True)
     
     recent_reviews = load_recent_reviews()
     
@@ -356,28 +356,28 @@ if page == "Analytics":
                 time_str = f"{time_ago.seconds // 60}m ago"
             
             if review['status'] == 'approved':
-                status_html = '<span class="status-badge badge-success">Approved</span>'
+                status_html = '<span class="status-badge badge-success">Одобрен</span>'
             elif review['status'] == 'needs_review':
-                status_html = '<span class="status-badge badge-warning">Needs Review</span>'
+                status_html = '<span class="status-badge badge-warning">Нужны правки</span>'
             else:
-                status_html = '<span class="status-badge badge-danger">Rejected</span>'
+                status_html = '<span class="status-badge badge-danger">Отклонён</span>'
             
             recent_data.append({
-                "Time": time_str,
+                "Время": time_str,
                 "MR": f"#{review['mr_id']}",
-                "Author": review['author'],
+                "Автор": review['author'],
                 "Score": f"{review['score']}/10",
-                "Issues": review['total_issues'],
-                "Status": status_html
+                "Проблем": review['total_issues'],
+                "Статус": status_html
             })
         
         df_recent = pd.DataFrame(recent_data)
         st.markdown(df_recent.to_html(escape=False, index=False), unsafe_allow_html=True)
     else:
-        st.info("No activity yet. Create a MR in GitLab to see analytics.")
+        st.info("Нет активности. Создайте MR в GitLab для отображения данных.")
     
     # Charts
-    st.markdown('<div class="section-header">Performance Metrics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">📈 Метрики производительности</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
@@ -393,35 +393,33 @@ if page == "Analytics":
             x="date",
             y="mrs",
             markers=True,
-            title="Daily Activity"
+            title="Активность по дням"
         )
         fig_activity.update_traces(line_color='#60a5fa', marker=dict(size=10, color='#6366f1'))
         fig_activity.update_layout(
             plot_bgcolor='#1e293b',
             paper_bgcolor='#1e293b',
             font=dict(color='#ffffff', size=12),
+            xaxis_title="Дата",
+            yaxis_title="Merge Requests",
             xaxis=dict(
-                title="Date",
                 gridcolor='#334155',
-                linecolor='#4a5568',
-                titlefont=dict(color='#cbd5e1')
+                linecolor='#4a5568'
             ),
             yaxis=dict(
-                title="Merge Requests",
                 gridcolor='#334155',
-                linecolor='#4a5568',
-                titlefont=dict(color='#cbd5e1')
+                linecolor='#4a5568'
             ),
-            title=dict(font=dict(color='#ffffff', size=16))
+            title_font=dict(color='#ffffff', size=16)
         )
         st.plotly_chart(fig_activity, use_container_width=True)
     
     with col2:
         # Issue types chart
         issue_types = stats.get("issue_types", [
-            {"type": "Security", "count": 5},
-            {"type": "Code Style", "count": 3},
-            {"type": "Performance", "count": 2}
+            {"type": "Безопасность", "count": 5},
+            {"type": "Стиль кода", "count": 3},
+            {"type": "Производительность", "count": 2}
         ])
         df_issues = pd.DataFrame(issue_types)
         
@@ -429,7 +427,7 @@ if page == "Analytics":
             df_issues,
             values="count",
             names="type",
-            title="Issue Categories",
+            title="Категории проблем",
             hole=0.4,
             color_discrete_sequence=['#6366f1', '#8b5cf6', '#a855f7', '#c084fc']
         )
@@ -452,42 +450,42 @@ if page == "Analytics":
         )
         st.plotly_chart(fig_issues, use_container_width=True)
 
-elif page == "Settings":
-    st.markdown('<div class="main-header">Settings</div>', unsafe_allow_html=True)
+elif page == "⚙️ Настройки":
+    st.markdown('<div class="main-header">⚙️ Настройки</div>', unsafe_allow_html=True)
     
-    tab1, tab2, tab3 = st.tabs(["AI Configuration", "Integrations", "Review Rules"])
+    tab1, tab2, tab3 = st.tabs(["🤖 AI Конфигурация", "🔗 Интеграции", "📋 Правила ревью"])
     
     with tab1:
-        st.markdown('<div class="section-header">AI Model Settings</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Настройки AI модели</div>', unsafe_allow_html=True)
         
         provider = st.selectbox(
-            "AI Provider",
+            "AI Провайдер",
             ["Gemini 2.5 Flash", "OpenAI GPT-4", "Claude 3.5 Sonnet"]
         )
         
         col1, col2 = st.columns(2)
         
         with col1:
-            auto_review = st.toggle("Auto-review on MR", value=True)
-            auto_label = st.toggle("Auto-label MRs", value=True)
+            auto_review = st.toggle("Авто-ревью при MR", value=True)
+            auto_label = st.toggle("Авто-метки на MR", value=True)
         
         with col2:
-            min_score = st.slider("Min score for approval", 0.0, 10.0, 7.0, 0.1)
-            max_length = st.number_input("Max code length", value=50000, step=5000)
+            min_score = st.slider("Минимальный score для апрува", 0.0, 10.0, 7.0, 0.1)
+            max_length = st.number_input("Макс. длина кода", value=50000, step=5000)
         
         st.markdown("---")
         
         custom_prompt = st.text_area(
-            "Custom Instructions",
-            placeholder="E.g., Focus on banking security, PCI DSS compliance...",
+            "Дополнительные инструкции",
+            placeholder="Например: Фокус на банковской безопасности, PCI DSS...",
             height=150
         )
         
-        if st.button("Save Settings", type="primary"):
-            st.success("Settings saved successfully!")
+        if st.button("💾 Сохранить настройки", type="primary"):
+            st.success("✅ Настройки сохранены!")
     
     with tab2:
-        st.markdown('<div class="section-header">GitLab Integration</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Интеграция с GitLab</div>', unsafe_allow_html=True)
         
         gitlab_url = st.text_input("GitLab URL", value="https://gitlab.com")
         webhook_url = st.text_input(
@@ -496,41 +494,41 @@ elif page == "Settings":
             disabled=True
         )
         
-        st.success("Connected to GitLab")
+        st.success("✅ Подключено к GitLab")
         
         st.markdown("---")
         
-        st.markdown("**Webhook Status**")
+        st.markdown("**Статус Webhook**")
         col1, col2 = st.columns(2)
         
         with col1:
-            st.metric("Total Received", "47")
+            st.metric("Всего получено", "47")
         
         with col2:
-            st.metric("Last Event", "2m ago")
+            st.metric("Последнее событие", "2 мин назад")
     
     with tab3:
-        st.markdown('<div class="section-header">Code Review Rules</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Правила ревью кода</div>', unsafe_allow_html=True)
         
-        st.markdown("Configure custom rules for your project")
+        st.markdown("Настройте правила для вашего проекта")
         
         security_level = st.select_slider(
-            "Security Check Level",
-            options=["Low", "Medium", "High", "Critical"],
-            value="High"
+            "Уровень проверки безопасности",
+            options=["Низкий", "Средний", "Высокий", "Критичный"],
+            value="Высокий"
         )
         
         check_types = st.multiselect(
-            "Enable Checks",
-            ["Security", "Performance", "Code Style", "Best Practices", "Architecture"],
-            default=["Security", "Performance", "Best Practices"]
+            "Включить проверки",
+            ["Безопасность", "Производительность", "Стиль кода", "Best Practices", "Архитектура"],
+            default=["Безопасность", "Производительность", "Best Practices"]
         )
         
-        if st.button("Save Rules", type="primary"):
-            st.success("Rules saved successfully!")
+        if st.button("💾 Сохранить правила", type="primary"):
+            st.success("✅ Правила сохранены!")
 
-elif page == "Team":
-    st.markdown('<div class="main-header">Team Performance</div>', unsafe_allow_html=True)
+elif page == "👥 Команда":
+    st.markdown('<div class="main-header">👥 Производительность команды</div>', unsafe_allow_html=True)
     
     stats = load_stats()
     
@@ -549,44 +547,44 @@ elif page == "Team":
         df_team["rank"] = df_team["avg_score"].rank(ascending=False, method="dense").astype(int)
         df_team = df_team.sort_values("avg_score", ascending=False)
         
-        df_team["Developer"] = df_team["developer"].apply(lambda x: f"@{x}")
+        df_team["Разработчик"] = df_team["developer"].apply(lambda x: f"@{x}")
         df_team["MRs"] = df_team["mrs"]
-        df_team["Avg Score"] = df_team["avg_score"].apply(lambda x: f"{x}/10")
-        df_team["Time Saved"] = df_team["time_saved"].apply(lambda x: f"{x}h")
-        df_team["Rank"] = df_team["rank"]
+        df_team["Средний Score"] = df_team["avg_score"].apply(lambda x: f"{x}/10")
+        df_team["Время сэкономлено"] = df_team["time_saved"].apply(lambda x: f"{x}ч")
+        df_team["Ранг"] = df_team["rank"]
         
         st.dataframe(
-            df_team[["Rank", "Developer", "MRs", "Avg Score", "Time Saved"]],
+            df_team[["Ранг", "Разработчик", "MRs", "Средний Score", "Время сэкономлено"]],
             use_container_width=True,
             hide_index=True
         )
     else:
-        st.info("No team data available yet.")
+        st.info("Нет данных по команде.")
 
-elif page == "Learning":
-    st.markdown('<div class="main-header">AI Learning Center</div>', unsafe_allow_html=True)
+elif page == "🧠 Обучение":
+    st.markdown('<div class="main-header">🧠 Центр обучения AI</div>', unsafe_allow_html=True)
     
-    st.markdown("Help improve AI by providing feedback on reviews")
+    st.markdown("Помогите улучшить AI, оставляя обратную связь на проверки")
     
-    st.markdown('<div class="section-header">Feedback System</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Система обратной связи</div>', unsafe_allow_html=True)
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.markdown("The AI learns from senior developer feedback to improve accuracy over time.")
+        st.markdown("AI учится на основе обратной связи сеньоров для повышения точности.")
     
     with col2:
-        st.metric("Total Feedback", "12")
-        st.metric("Accuracy", "94%")
+        st.metric("Всего отзывов", "12")
+        st.metric("Точность", "94%")
     
     st.markdown("---")
     
-    st.markdown("**Recent AI Improvements**")
+    st.markdown("**Последние улучшения AI**")
     
     improvements = [
-        {"Date": "2025-11-23", "Area": "Security", "Improvement": "Better SQL injection detection"},
-        {"Date": "2025-11-22", "Area": "Performance", "Improvement": "Improved algorithm complexity analysis"},
-        {"Date": "2025-11-21", "Area": "Code Style", "Improvement": "Enhanced PEP 8 compliance checking"}
+        {"Дата": "2025-11-23", "Область": "Безопасность", "Улучшение": "Улучшено обнаружение SQL injection"},
+        {"Дата": "2025-11-22", "Область": "Производительность", "Улучшение": "Улучшен анализ сложности алгоритмов"},
+        {"Дата": "2025-11-21", "Область": "Стиль кода", "Улучшение": "Расширена проверка PEP 8"}
     ]
     
     df_improvements = pd.DataFrame(improvements)
