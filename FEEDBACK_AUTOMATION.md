@@ -1,5 +1,13 @@
 # 🎯 Автоматизация Feedback для AI Learning
 
+## ⚠️ ВАЖНО: POLLING ВМЕСТО WEBHOOKS
+
+**GitLab НЕ отправляет webhook события для emoji reactions!**
+
+Поэтому используем **polling** - периодическую проверку reactions через API.
+
+---
+
 ## ✅ ЧТО ДОБАВЛЕНО:
 
 ### 1. **Методы в GitLabClient** (`backend/gitlab_client.py`)
@@ -16,7 +24,39 @@ def get_note_content(self, project_id: int, mr_iid: int, note_id: int) -> Option
 
 ---
 
-### 2. **Webhook Handler для Note Events** (`backend/main.py`)
+### 2. **Reaction Poller** (`backend/reaction_poller.py`)
+
+```python
+class ReactionPoller:
+    """Периодически проверяет reactions на AI комментарии"""
+    
+    async def start(self):
+        """Запустить polling в фоне (каждые 60 секунд)"""
+        while self.running:
+            await self.check_recent_comments()
+            await asyncio.sleep(60)
+```
+
+**Что делает:**
+1. Каждые 60 секунд проверяет недавние MR (за последние 24 часа)
+2. Находит AI комментарии (по маркеру "🤖" или "AI Review")
+3. Получает reactions на каждом комментарии через API
+4. Создает feedback если находит 👍/👎
+5. Сохраняет в `data/feedback.json`
+6. Для negative feedback → создает learning pattern
+
+**Преимущества:**
+- ✅ Работает без webhook (GitLab не поддерживает emoji events)
+- ✅ Надежно - не зависит от network timeout
+- ✅ Простая настройка - просто запустить backend
+
+**Недостатки:**
+- ⚠️ Задержка до 60 секунд (но это норм для хакатона)
+- ⚠️ Нагрузка на GitLab API (но минимальная)
+
+---
+
+### 3. **Webhook Handler для Note Events** (`backend/main.py`) - DEPRECATED
 
 ```python
 @app.post("/webhook/gitlab/note")
@@ -52,20 +92,19 @@ async def gitlab_note_webhook(request: Request):
 
 ## 🚀 КАК НАСТРОИТЬ:
 
-### Шаг 1: Настроить webhook в GitLab
+### Шаг 1: Запустить backend
 
-1. Открой **Settings → Webhooks** в GitLab проекте
+```bash
+# Backend автоматически запустит reaction poller
+python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
-2. **Создай ВТОРОЙ webhook** (первый уже есть для MR events):
-   ```
-   URL: http://your-backend-url/webhook/gitlab/note
-   Secret Token: <тот же WEBHOOK_SECRET>
-   ```
+# В логах увидишь:
+# ✅ Reaction poller started (checking every 60s)
+```
 
-3. Выбери события:
-   - ✅ **Comments**
+**ВСЁ! Больше ничего не нужно!**
 
-4. Сохрани
+❌ **Webhook для note events НЕ НУЖЕН** (GitLab не поддерживает emoji events)
 
 ---
 

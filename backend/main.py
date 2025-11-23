@@ -15,6 +15,7 @@ from backend.gitlab_client import GitLabClient
 from backend.code_analyzer import CodeAnalyzer
 from backend.feedback import learning_system, Feedback
 from backend.database import init_db, close_db, save_review, get_stats as get_db_stats
+from backend.reaction_poller import start_reaction_poller, stop_reaction_poller
 import json
 from pathlib import Path
 import time
@@ -50,6 +51,10 @@ async def lifespan(app: FastAPI):
     app.state.code_analyzer = CodeAnalyzer()
     logger.info("✅ Code Analyzer initialized")
     
+    # Start reaction poller (проверяет reactions каждые 60 секунд)
+    start_reaction_poller(app.state.gitlab_client, check_interval=60)
+    logger.info("✅ Reaction poller started (checking every 60s)")
+    
     logger.info(f"🎯 LLM Provider: {settings.LLM_PROVIDER}")
     logger.info(f"🌐 Server running on {settings.APP_HOST}:{settings.PORT}")
     
@@ -57,6 +62,7 @@ async def lifespan(app: FastAPI):
     
     # Cleanup
     logger.info("👋 Shutting down...")
+    stop_reaction_poller()
     close_db()
 
 
