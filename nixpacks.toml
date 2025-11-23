@@ -1,0 +1,15 @@
+# Nixpacks configuration for Railway
+# Specifies Python 3.11 for compatibility with psycopg2-binary
+
+[phases.setup]
+nixPkgs = ["python311", "postgresql"]
+
+[phases.install]
+cmds = [
+    "python3.11 -m venv --copies /opt/venv",
+    ". /opt/venv/bin/activate && pip install --upgrade pip",
+    ". /opt/venv/bin/activate && pip install -r requirements-backend.txt"
+]
+
+[start]
+cmd = "uvicorn backend.main:app --host 0.0.0.0 --port $PORT"
