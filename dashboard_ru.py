@@ -21,7 +21,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Dark theme custom CSS
+# Modern theme with good contrast
 st.markdown("""
 <style>
     /* Main theme colors */
@@ -31,16 +31,21 @@ st.markdown("""
         --success-color: #10b981;
         --warning-color: #f59e0b;
         --danger-color: #ef4444;
-        --dark-bg: #0f172a;
-        --card-bg: #1e293b;
-        --text-primary: #f1f5f9;
-        --text-secondary: #94a3b8;
+        --dark-bg: #1a1d29;
+        --card-bg: #252936;
+        --text-primary: #ffffff;
+        --text-secondary: #cbd5e1;
     }
     
     /* Global styles */
     .stApp {
         background-color: var(--dark-bg);
-        color: var(--text-primary);
+        color: var(--text-primary) !important;
+    }
+    
+    /* Force light text everywhere */
+    .stMarkdown, .stText, p, span, div {
+        color: var(--text-primary) !important;
     }
     
     /* Headers */
@@ -64,29 +69,30 @@ st.markdown("""
     
     /* Metric cards */
     .metric-card {
-        background: linear-gradient(135deg, var(--card-bg) 0%, #334155 100%);
+        background: linear-gradient(135deg, #2d3748 0%, #1e293b 100%);
         padding: 1.5rem;
         border-radius: 12px;
-        border: 1px solid #334155;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        border: 1px solid #4a5568;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
         transition: transform 0.2s, box-shadow 0.2s;
     }
     
     .metric-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+        border-color: var(--primary-color);
     }
     
     .metric-value {
         font-size: 2.5rem;
         font-weight: 700;
-        color: var(--primary-color);
+        color: #60a5fa !important;
         line-height: 1;
     }
     
     .metric-label {
         font-size: 0.875rem;
-        color: var(--text-secondary);
+        color: #e2e8f0 !important;
         text-transform: uppercase;
         letter-spacing: 0.05em;
         margin-top: 0.5rem;
@@ -138,14 +144,77 @@ st.markdown("""
     }
     
     /* Sidebar */
-    .css-1d391kg {
-        background-color: var(--card-bg);
+    [data-testid="stSidebar"] {
+        background-color: #1e293b;
+    }
+    
+    [data-testid="stSidebar"] * {
+        color: #ffffff !important;
     }
     
     /* Tables */
     .dataframe {
-        border: 1px solid #334155;
+        border: 1px solid #4a5568;
         border-radius: 8px;
+        color: #ffffff !important;
+    }
+    
+    .dataframe th {
+        background-color: #2d3748 !important;
+        color: #ffffff !important;
+    }
+    
+    .dataframe td {
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+    }
+    
+    /* Streamlit widgets */
+    .stSelectbox, .stTextInput, .stTextArea {
+        color: #ffffff !important;
+    }
+    
+    .stSelectbox > div > div {
+        background-color: #2d3748 !important;
+        color: #ffffff !important;
+    }
+    
+    /* Info/Success/Warning boxes */
+    .stAlert {
+        background-color: #2d3748 !important;
+        color: #ffffff !important;
+        border-radius: 8px !important;
+    }
+    
+    /* HTML Tables */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #1e293b;
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    table thead {
+        background-color: #2d3748;
+    }
+    
+    table th {
+        padding: 12px;
+        text-align: left;
+        color: #cbd5e1 !important;
+        font-weight: 600;
+        border-bottom: 2px solid #4a5568;
+    }
+    
+    table td {
+        padding: 12px;
+        color: #ffffff !important;
+        border-bottom: 1px solid #334155;
+    }
+    
+    table tr:hover {
+        background-color: #252936;
     }
     
     /* Remove default streamlit branding */
@@ -326,12 +395,24 @@ if page == "Analytics":
             markers=True,
             title="Daily Activity"
         )
+        fig_activity.update_traces(line_color='#60a5fa', marker=dict(size=10, color='#6366f1'))
         fig_activity.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font_color='#f1f5f9',
-            xaxis_title="Date",
-            yaxis_title="Merge Requests"
+            plot_bgcolor='#1e293b',
+            paper_bgcolor='#1e293b',
+            font=dict(color='#ffffff', size=12),
+            xaxis=dict(
+                title="Date",
+                gridcolor='#334155',
+                linecolor='#4a5568',
+                titlefont=dict(color='#cbd5e1')
+            ),
+            yaxis=dict(
+                title="Merge Requests",
+                gridcolor='#334155',
+                linecolor='#4a5568',
+                titlefont=dict(color='#cbd5e1')
+            ),
+            title=dict(font=dict(color='#ffffff', size=16))
         )
         st.plotly_chart(fig_activity, use_container_width=True)
     
@@ -349,12 +430,25 @@ if page == "Analytics":
             values="count",
             names="type",
             title="Issue Categories",
-            hole=0.4
+            hole=0.4,
+            color_discrete_sequence=['#6366f1', '#8b5cf6', '#a855f7', '#c084fc']
+        )
+        fig_issues.update_traces(
+            textfont=dict(color='#ffffff', size=14),
+            marker=dict(line=dict(color='#1e293b', width=2))
         )
         fig_issues.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
-            font_color='#f1f5f9'
+            plot_bgcolor='#1e293b',
+            paper_bgcolor='#1e293b',
+            font=dict(color='#ffffff', size=12),
+            title=dict(font=dict(color='#ffffff', size=16)),
+            showlegend=True,
+            legend=dict(
+                font=dict(color='#ffffff'),
+                bgcolor='#252936',
+                bordercolor='#4a5568',
+                borderwidth=1
+            )
         )
         st.plotly_chart(fig_issues, use_container_width=True)
 
