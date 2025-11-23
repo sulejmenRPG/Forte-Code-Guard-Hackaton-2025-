@@ -47,6 +47,38 @@ class GitLabClient:
             logger.error(f"❌ Failed to get MR {mr_iid}: {str(e)}")
             raise
     
+    def get_note_reactions(self, project_id: int, mr_iid: int, note_id: int) -> List[str]:
+        """Get reactions (emojis) on a MR note/comment"""
+        try:
+            project = self.get_project(project_id)
+            mr = project.mergerequests.get(mr_iid)
+            note = mr.notes.get(note_id)
+            
+            # Get award emojis (reactions)
+            reactions = []
+            try:
+                awards = note.awardemojis.list(get_all=True)
+                reactions = [award.name for award in awards]
+                logger.info(f"📊 Note {note_id} has reactions: {reactions}")
+            except Exception as e:
+                logger.warning(f"⚠️ Could not get reactions for note {note_id}: {str(e)}")
+            
+            return reactions
+        except Exception as e:
+            logger.error(f"❌ Failed to get reactions for note {note_id}: {str(e)}")
+            return []
+    
+    def get_note_content(self, project_id: int, mr_iid: int, note_id: int) -> Optional[str]:
+        """Get the content of a specific note/comment"""
+        try:
+            project = self.get_project(project_id)
+            mr = project.mergerequests.get(mr_iid)
+            note = mr.notes.get(note_id)
+            return note.body
+        except Exception as e:
+            logger.error(f"❌ Failed to get note {note_id}: {str(e)}")
+            return None
+    
     def get_mr_changes(self, project_id: int, mr_iid: int) -> List[Dict]:
         """Get changes (diff) from Merge Request"""
         try:

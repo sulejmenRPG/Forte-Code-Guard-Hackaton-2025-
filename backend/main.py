@@ -200,6 +200,113 @@ async def gitlab_webhook(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/webhook/gitlab/note")
+async def gitlab_note_webhook(
+    request: Request,
+    x_gitlab_token: Optional[str] = Header(None)
+):
+    """
+    GitLab note webhook endpoint
+    Receives notifications about comment reactions (👍/👎)
+    Automatically creates feedback for AI learning
+    """
+    logger.info("💬 Received GitLab note event")
+    
+    # Verify webhook token
+    if x_gitlab_token != settings.WEBHOOK_SECRET:
+        logger.warning("❌ Invalid webhook token")
+        raise HTTPException(status_code=401, detail="Invalid webhook token")
+    
+    try:
+        payload = await request.json()
+        
+        # Only process note events
+        if payload.get('object_kind') != 'note':
+            return {"status": "ignored", "reason": "Not a note event"}
+        
+        # Get note details
+        note_data = payload.get('object_attributes', {})
+        note_id = note_data.get('id')
+        note_body = note_data.get('note', '')
+        author_name = payload.get('user', {}).get('name', 'Unknown')
+        
+        # Get MR details
+        mr_data = payload.get('merge_request', {})
+        if not mr_data:
+            return {"status": "ignored", "reason": "Not a MR comment"}
+        
+        mr_iid = mr_data.get('iid')
+        project_id = payload.get('project_id')
+        
+        logger.info(f"💬 Processing note {note_id} on MR #{mr_iid}")
+        
+        # Get reactions on this comment
+        gitlab_client: GitLabClient = request.app.state.gitlab_client
+        reactions = gitlab_client.get_note_reactions(project_id, mr_iid, note_id)
+        
+        if not reactions:
+            return {"status": "ignored", "reason": "No reactions yet"}
+        
+        # Check if comment is from our AI bot
+        is_ai_comment = "🤖" in note_body or "AI Review" in note_body
+        
+        if not is_ai_comment:
+            return {"status": "ignored", "reason": "Not an AI comment"}
+        
+        logger.info(f"👍👎 Reactions on AI comment: {reactions}")
+        
+        # Process reactions
+        feedback_created = False
+        
+        # Thumbs down = negative feedback
+        if 'thumbsdown' in reactions or '-1' in reactions:
+            feedback = Feedback(
+                comment_id=str(note_id),
+                mr_id=mr_iid,
+                project_id=project_id,
+                feedback_type='negative',
+                reason=f"Senior marked AI comment as incorrect",
+                senior_name=author_name,
+                ai_comment=note_body[:500]  # Truncate to 500 chars
+            )
+            
+            learning_system.add_feedback(feedback)
+            logger.info(f"❌ Negative feedback recorded from {author_name}")
+            feedback_created = True
+        
+        # Thumbs up = positive feedback
+        if 'thumbsup' in reactions or '+1' in reactions:
+            feedback = Feedback(
+                comment_id=str(note_id),
+                mr_id=mr_iid,
+                project_id=project_id,
+                feedback_type='positive',
+                reason=f"Senior approved AI comment",
+                senior_name=author_name,
+                ai_comment=note_body[:500]
+            )
+            
+            learning_system.add_feedback(feedback)
+            logger.info(f"✅ Positive feedback recorded from {author_name}")
+            feedback_created = True
+        
+        if feedback_created:
+            return {
+                "status": "success",
+                "message": "Feedback recorded for AI learning",
+                "reactions": reactions
+            }
+        else:
+            return {
+                "status": "ignored",
+                "reason": "No thumbs reactions found"
+            }
+        
+    except Exception as e:
+        logger.error(f"❌ Error processing note webhook: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/stats")
 async def get_statistics():
     """Get analysis statistics (for dashboard)"""

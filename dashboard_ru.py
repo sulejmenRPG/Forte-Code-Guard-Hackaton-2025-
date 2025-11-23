@@ -564,6 +564,16 @@ st.markdown("""
 # Backend API URL
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
+def load_feedbacks():
+    """Load feedback data from API"""
+    try:
+        response = requests.get(f"{API_URL}/api/feedback/stats", timeout=3)
+        if response.status_code == 200:
+            return response.json()
+    except:
+        pass
+    return {"total": 0, "positive": 0, "negative": 0, "positive_rate": 0}
+
 def load_stats():
     """Load statistics from API"""
     try:
@@ -911,14 +921,56 @@ elif page == "▸ Обучение":
     
     st.markdown('<div class="section-header">Система обратной связи</div>', unsafe_allow_html=True)
     
-    col1, col2 = st.columns([2, 1])
+    # Load feedback stats
+    feedback_stats = load_feedbacks()
+    
+    col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.markdown("AI учится на основе обратной связи сеньоров для повышения точности.")
+        st.metric("Всего отзывов", feedback_stats.get('total', 0))
     
     with col2:
-        st.metric("Всего отзывов", "12")
-        st.metric("Точность", "94%")
+        st.metric("👍 Позитивных", feedback_stats.get('positive', 0))
+    
+    with col3:
+        st.metric("👎 Негативных", feedback_stats.get('negative', 0))
+    
+    with col4:
+        positive_rate = feedback_stats.get('positive_rate', 0)
+        st.metric("Точность", f"{positive_rate:.1f}%")
+    
+    st.markdown("---")
+    
+    # Webhook setup instructions
+    st.markdown('<div class="section-header">⚙️ Настройка автоматического feedback</div>', unsafe_allow_html=True)
+    
+    with st.expander("📝 Инструкция по настройке GitLab webhook для reactions"):
+        st.markdown(f"""
+        **Чтобы AI автоматически учился на 👍/👎 в GitLab:**
+        
+        1. Открой **Settings → Webhooks** в твоем GitLab проекте
+        
+        2. Добавь **второй webhook** для note events:
+           ```
+           URL: {API_URL}/webhook/gitlab/note
+           ```
+        
+        3. Выбери события:
+           - ✅ **Comments** (note events)
+        
+        4. Сохрани
+        
+        **Как это работает:**
+        - Сеньор ставит 👍 или 👎 на комментарий AI в MR
+        - GitLab отправляет webhook на backend
+        - Backend автоматически создает feedback
+        - Negative feedback → создается learning pattern
+        - Learning pattern добавляется в промпт при следующих анализах
+        
+        **✅ После настройки все будет автоматически!**
+        """)
+        
+        st.markdown("**Webhook token:** Используй тот же `WEBHOOK_SECRET` что и для основного webhook")
     
     st.markdown("---")
     
