@@ -17,6 +17,8 @@ from backend.feedback import learning_system, Feedback
 from backend.database import init_db, close_db, save_review, get_stats as get_db_stats
 import json
 from pathlib import Path
+import time
+from collections import defaultdict
 
 # Configure logging
 logging.basicConfig(
@@ -24,6 +26,11 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Cache for preventing duplicate processing
+# Format: {(project_id, mr_iid): last_processed_timestamp}
+processed_mrs_cache = defaultdict(float)
+DUPLICATE_THRESHOLD = 60  # seconds - don't process same MR within 60 seconds
 
 
 @asynccontextmanager
@@ -126,6 +133,18 @@ async def gitlab_webhook(
         
         project_id = payload.get('project', {}).get('id')
         mr_iid = mr_data.get('iid')
+        
+        # Check for duplicate processing
+        mr_key = (project_id, mr_iid)
+        current_time = time.time()
+        last_processed = processed_mrs_cache.get(mr_key, 0)
+        
+        if current_time - last_processed < DUPLICATE_THRESHOLD:
+            logger.info(f"⏭️ Skipping duplicate webhook for MR #{mr_iid} (processed {int(current_time - last_processed)}s ago)")
+            return {"status": "skipped", "reason": "Duplicate webhook within threshold"}
+        
+        # Mark as processing
+        processed_mrs_cache[mr_key] = current_time
         
         logger.info(f"🔍 Processing MR #{mr_iid} in project {project_id}")
         
