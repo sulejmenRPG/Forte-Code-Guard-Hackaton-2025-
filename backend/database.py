@@ -117,6 +117,27 @@ def save_review(mr_data: dict, analysis_result: dict):
         db.close()
 
 
+def clear_all_reviews():
+    """Clear all reviews from database"""
+    if not SessionLocal:
+        logger.warning("Database not initialized")
+        return 0
+    
+    db = SessionLocal()
+    try:
+        count = db.query(CodeReviewDB).count()
+        db.query(CodeReviewDB).delete()
+        db.commit()
+        logger.info(f"🗑️ Cleared {count} reviews from database")
+        return count
+    except Exception as e:
+        logger.error(f"❌ Failed to clear reviews: {str(e)}")
+        db.rollback()
+        return 0
+    finally:
+        db.close()
+
+
 def get_stats():
     """Get statistics from database"""
     if not SessionLocal:

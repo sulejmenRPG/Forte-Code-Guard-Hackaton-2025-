@@ -10,6 +10,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import json
 import os
+import time
 from pathlib import Path
 import requests
 
@@ -853,6 +854,30 @@ elif page == "▸ Настройки":
                 st.error(f"❌ Ошибка: {response.text}")
         except Exception as e:
             st.warning(f"⚠️ Backend недоступен: {str(e)}. Промпт сохранен локально для текущей сессии.")
+    
+    st.markdown("---")
+    st.markdown('<div class="section-header">🗑️ Управление данными</div>', unsafe_allow_html=True)
+    
+    st.markdown("**Очистка базы данных:**")
+    st.markdown("Удалит все сохраненные reviews из БД. Dashboard будет показывать только новые MR.")
+    
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        confirm_clear = st.checkbox("Я понимаю что это удалит все данные", key="confirm_clear")
+    with col2:
+        if st.button("🗑️ Очистить БД", type="secondary", disabled=not confirm_clear, use_container_width=True):
+            try:
+                response = requests.delete(f"{API_URL}/api/reviews", timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    st.success(f"✅ Удалено {data['deleted_count']} reviews из БД")
+                    st.info("🔄 Обнови страницу чтобы увидеть изменения")
+                    time.sleep(1)
+                    st.rerun()
+                else:
+                    st.error(f"❌ Ошибка: {response.text}")
+            except Exception as e:
+                st.error(f"❌ Backend недоступен: {str(e)}")
     
     st.markdown("---")
     st.markdown('<div class="section-header">Интеграция с GitLab</div>', unsafe_allow_html=True)

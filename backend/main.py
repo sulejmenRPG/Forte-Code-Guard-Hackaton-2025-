@@ -14,7 +14,7 @@ from backend.models import WebhookPayload, HealthResponse, AISettings
 from backend.gitlab_client import GitLabClient
 from backend.code_analyzer import CodeAnalyzer
 from backend.feedback import learning_system, Feedback
-from backend.database import init_db, close_db, save_review, get_stats as get_db_stats
+from backend.database import init_db, close_db, save_review, get_stats as get_db_stats, clear_all_reviews
 from backend.reaction_poller import start_reaction_poller, stop_reaction_poller
 import json
 from pathlib import Path
@@ -434,6 +434,21 @@ async def get_settings():
         return current_settings
     except Exception as e:
         logger.error(f"Error getting settings: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/reviews")
+async def clear_reviews():
+    """Clear all reviews from database (for testing/cleanup)"""
+    try:
+        count = clear_all_reviews()
+        return {
+            "status": "success",
+            "message": f"Cleared {count} reviews from database",
+            "deleted_count": count
+        }
+    except Exception as e:
+        logger.error(f"Error clearing reviews: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
