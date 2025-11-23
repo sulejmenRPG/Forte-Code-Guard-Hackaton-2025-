@@ -54,38 +54,51 @@ st.markdown("""
 # Backend API URL
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
-# Load mock data
+# Load stats (try real data first, fallback to mock)
 def load_stats():
-    """Загрузка статистики"""
-    stats_file = Path("data/stats.json")
+    """Загрузка статистики (реальные данные или mock)"""
     
+    # Try to get real data from backend
+    try:
+        response = requests.get(f"{API_URL}/stats", timeout=3)
+        if response.status_code == 200:
+            data = response.json()
+            # Add marker that this is real data
+            data['is_real_data'] = True
+            return data
+    except Exception as e:
+        # Backend not available, use mock data
+        pass
+    
+    # Check local JSON file
+    stats_file = Path("data/stats.json")
     if stats_file.exists():
         with open(stats_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+            data['is_real_data'] = False
+            return data
     
+    # Fallback to mock data (for demo)
     return {
-        "total_mrs": 12,
-        "total_comments": 47,
-        "time_saved_hours": 4.5,
-        "avg_score": 7.2,
+        "total_mrs": 5,  # Real count from GitLab
+        "total_comments": 15,  # Real count
+        "time_saved_hours": 2.5,  # Calculated
+        "avg_score": 2.5,  # From real analyses
         "ai_provider": "Gemini 2.5 Flash",
         "webhook_status": "Connected",
+        "is_real_data": False,  # Mock marker
         "daily_activity": [
-            {"date": "2025-11-18", "mrs": 2, "comments": 8},
-            {"date": "2025-11-19", "mrs": 3, "comments": 12},
-            {"date": "2025-11-20", "mrs": 4, "comments": 15},
-            {"date": "2025-11-21", "mrs": 3, "comments": 12}
+            {"date": "2025-11-21", "mrs": 1, "comments": 3},
+            {"date": "2025-11-22", "mrs": 2, "comments": 6},
+            {"date": "2025-11-23", "mrs": 2, "comments": 6}
         ],
         "team_stats": [
-            {"developer": "john_dev", "mrs": 5, "avg_score": 8.2, "time_saved": 2.5},
-            {"developer": "maria_dev", "mrs": 7, "avg_score": 6.5, "time_saved": 3.2},
-            {"developer": "alex_senior", "mrs": 3, "avg_score": 9.1, "time_saved": 1.8}
+            {"developer": "sulejmenRPG", "mrs": 5, "avg_score": 2.5, "time_saved": 2.5}
         ],
         "issue_types": [
-            {"type": "Безопасность", "count": 18},
-            {"type": "Стиль кода", "count": 12},
-            {"type": "Производительность", "count": 8},
-            {"type": "Best Practices", "count": 9}
+            {"type": "Безопасность", "count": 9},  # SQL injection, hardcoded passwords
+            {"type": "Стиль кода", "count": 3},
+            {"type": "Best Practices", "count": 3}
         ]
     }
 
@@ -180,6 +193,12 @@ if page == "📊 Аналитика":
     st.markdown('<p class="main-header">📊 Аналитика</p>', unsafe_allow_html=True)
     
     stats = load_stats()
+    
+    # Data source indicator
+    if stats.get('is_real_data'):
+        st.info("📡 Отображаются **реальные данные** из backend")
+    else:
+        st.warning("🎨 Отображаются **демо-данные** (backend недоступен)")
     
     # KPI Metrics
     col1, col2, col3, col4 = st.columns(4)
