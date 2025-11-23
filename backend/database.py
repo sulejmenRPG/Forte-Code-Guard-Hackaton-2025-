@@ -90,21 +90,39 @@ def save_review(mr_data: dict, analysis_result: dict):
     
     db = SessionLocal()
     try:
-        # Calculate realistic time saved based on issues found
+        # Calculate realistic time saved based on code complexity
         critical = analysis_result.get('critical_count', 0)
         medium = analysis_result.get('medium_count', 0)
         low = analysis_result.get('low_count', 0)
-        total_issues = critical + medium + low
+        lines_changed = analysis_result.get('lines_changed', 0)
         
-        # Realistic calculation:
-        # - Base: 5 min for running analysis
-        # - Critical issue: 10 min to identify + 20 min to fix
-        # - Medium issue: 5 min to identify + 10 min to fix
-        # - Low issue: 2 min to identify
-        # Max cap: 120 min (2 hours)
-        estimated_time = 5 + (critical * 30) + (medium * 15) + (low * 2)
+        # Realistic calculation based on lines + issues:
+        # 1. Base time from lines changed:
+        #    - 1-50 lines: 5-10 min
+        #    - 51-200 lines: 10-30 min
+        #    - 201-500 lines: 30-60 min
+        #    - 500+ lines: 60-90 min
+        if lines_changed <= 50:
+            base_time = 5 + (lines_changed * 0.1)  # ~0.1 min per line
+        elif lines_changed <= 200:
+            base_time = 10 + ((lines_changed - 50) * 0.13)
+        elif lines_changed <= 500:
+            base_time = 30 + ((lines_changed - 200) * 0.1)
+        else:
+            base_time = 60 + min((lines_changed - 500) * 0.06, 30)
+        
+        # 2. Add time for issues found:
+        #    - Critical: 20 min (hard to spot manually)
+        #    - Medium: 10 min
+        #    - Low: 3 min
+        issue_time = (critical * 20) + (medium * 10) + (low * 3)
+        
+        # 3. Total time
+        estimated_time = int(base_time + issue_time)
+        
+        # 4. Apply reasonable limits
         estimated_time = min(estimated_time, 120)  # Cap at 2 hours
-        estimated_time = max(estimated_time, 5)   # Minimum 5 min
+        estimated_time = max(estimated_time, 5)    # Minimum 5 min
         
         review = CodeReviewDB(
             merge_request_id=mr_data.get('iid'),
