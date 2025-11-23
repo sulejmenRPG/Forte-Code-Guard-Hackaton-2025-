@@ -223,6 +223,24 @@ async def get_statistics():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/recent")
+async def get_recent_activity(limit: int = 10):
+    """Get recent MR reviews (for dashboard)"""
+    try:
+        from backend.database import get_recent_reviews
+        reviews = get_recent_reviews(limit=limit)
+        
+        if reviews:
+            return {"reviews": reviews}
+        
+        # Fallback to empty list
+        return {"reviews": []}
+        
+    except Exception as e:
+        logger.error(f"Error loading recent activity: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/api/feedback")
 async def add_feedback(feedback: Feedback):
     """Add feedback from senior developer"""

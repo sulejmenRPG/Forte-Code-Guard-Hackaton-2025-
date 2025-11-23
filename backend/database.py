@@ -147,3 +147,37 @@ def get_stats():
         return None
     finally:
         db.close()
+
+
+def get_recent_reviews(limit: int = 10):
+    """Get recent reviews from database"""
+    if not SessionLocal:
+        return []
+    
+    db = SessionLocal()
+    try:
+        reviews = db.query(CodeReviewDB).order_by(
+            CodeReviewDB.created_at.desc()
+        ).limit(limit).all()
+        
+        result = []
+        for review in reviews:
+            result.append({
+                "mr_id": review.merge_request_id,
+                "project_name": review.project_name,
+                "author": review.author,
+                "score": review.score,
+                "status": review.status,
+                "created_at": review.created_at.isoformat() if review.created_at else None,
+                "time_saved": review.senior_time_saved,
+                "total_issues": review.critical_issues + review.medium_issues + review.low_issues,
+                "critical_issues": review.critical_issues
+            })
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Error getting recent reviews: {str(e)}")
+        return []
+    finally:
+        db.close()

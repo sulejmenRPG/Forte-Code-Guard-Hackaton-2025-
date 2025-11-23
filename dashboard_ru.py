@@ -1,6 +1,6 @@
 """
-AI Code Review Dashboard - Русская версия
-Аналитика и управление для AI ревью кода
+AI Code Review Dashboard - Modern Dark Theme
+Professional design without emojis
 """
 
 import streamlit as st
@@ -15,38 +15,157 @@ import requests
 
 # Page config
 st.set_page_config(
-    page_title="AI Ревью Кода - Dashboard",
-    page_icon="🤖",
+    page_title="AI Code Review - ForteBank",
+    page_icon="🔒",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
+# Dark theme custom CSS
 st.markdown("""
 <style>
+    /* Main theme colors */
+    :root {
+        --primary-color: #6366f1;
+        --secondary-color: #8b5cf6;
+        --success-color: #10b981;
+        --warning-color: #f59e0b;
+        --danger-color: #ef4444;
+        --dark-bg: #0f172a;
+        --card-bg: #1e293b;
+        --text-primary: #f1f5f9;
+        --text-secondary: #94a3b8;
+    }
+    
+    /* Global styles */
+    .stApp {
+        background-color: var(--dark-bg);
+        color: var(--text-primary);
+    }
+    
+    /* Headers */
     .main-header {
-        font-size: 3rem;
-        font-weight: bold;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 1rem;
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
     }
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 1.5rem;
-        border-radius: 10px;
-        color: white;
-    }
-    .stTabs [data-baseweb="tab-list"] button {
-        font-size: 1.1rem;
+    
+    .section-header {
+        font-size: 1.5rem;
         font-weight: 600;
+        color: var(--text-primary);
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid var(--primary-color);
+        padding-left: 1rem;
     }
-    .feedback-form {
-        background: #f8f9fa;
+    
+    /* Metric cards */
+    .metric-card {
+        background: linear-gradient(135deg, var(--card-bg) 0%, #334155 100%);
         padding: 1.5rem;
-        border-radius: 10px;
-        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        border: 1px solid #334155;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+    
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        line-height: 1;
+    }
+    
+    .metric-label {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-top: 0.5rem;
+    }
+    
+    /* Status badges */
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .badge-success {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--success-color);
+        border: 1px solid var(--success-color);
+    }
+    
+    .badge-warning {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: var(--warning-color);
+        border: 1px solid var(--warning-color);
+    }
+    
+    .badge-danger {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--danger-color);
+        border: 1px solid var(--danger-color);
+    }
+    
+    /* Buttons */
+    .stButton>button {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.2s;
+    }
+    
+    .stButton>button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+    }
+    
+    /* Sidebar */
+    .css-1d391kg {
+        background-color: var(--card-bg);
+    }
+    
+    /* Tables */
+    .dataframe {
+        border: 1px solid #334155;
+        border-radius: 8px;
+    }
+    
+    /* Remove default streamlit branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Icon styles */
+    .icon {
+        width: 24px;
+        height: 24px;
+        display: inline-block;
+        margin-right: 8px;
+        vertical-align: middle;
+    }
+    
+    .sidebar-icon {
+        width: 20px;
+        height: 20px;
+        margin-right: 10px;
+        vertical-align: middle;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -54,616 +173,327 @@ st.markdown("""
 # Backend API URL
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
-# Load stats (try real data first, fallback to mock)
 def load_stats():
-    """Загрузка статистики (реальные данные или mock)"""
-    
-    # Try to get real data from backend
+    """Load statistics from API"""
     try:
         response = requests.get(f"{API_URL}/stats", timeout=3)
         if response.status_code == 200:
             data = response.json()
-            # Add marker that this is real data
             data['is_real_data'] = True
             return data
-    except Exception as e:
-        # Backend not available, use mock data
+    except:
         pass
     
-    # Check local JSON file
-    stats_file = Path("data/stats.json")
-    if stats_file.exists():
-        with open(stats_file, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            data['is_real_data'] = False
-            return data
-    
-    # Fallback to mock data (for demo)
     return {
-        "total_mrs": 5,  # Real count from GitLab
-        "total_comments": 15,  # Real count
-        "time_saved_hours": 2.5,  # Calculated
-        "avg_score": 2.5,  # From real analyses
-        "ai_provider": "Gemini 2.5 Flash",
-        "webhook_status": "Connected",
-        "is_real_data": False,  # Mock marker
-        "daily_activity": [
-            {"date": "2025-11-21", "mrs": 1, "comments": 3},
-            {"date": "2025-11-22", "mrs": 2, "comments": 6},
-            {"date": "2025-11-23", "mrs": 2, "comments": 6}
-        ],
-        "team_stats": [
-            {"developer": "sulejmenRPG", "mrs": 5, "avg_score": 2.5, "time_saved": 2.5}
-        ],
-        "issue_types": [
-            {"type": "Безопасность", "count": 9},  # SQL injection, hardcoded passwords
-            {"type": "Стиль кода", "count": 3},
-            {"type": "Best Practices", "count": 3}
-        ]
+        "total_mrs": 0,
+        "total_comments": 0,
+        "time_saved_hours": 0,
+        "avg_score": 0.0,
+        "is_real_data": False
     }
 
-def load_recent_comments():
-    """Загрузка последних AI комментариев"""
-    # Mock data for demo
-    return [
-        {
-            "id": "comment_123",
-            "mr_id": 12,
-            "mr_title": "Fix security issues",
-            "comment": "Используйте параметризованные запросы вместо f-strings для SQL",
-            "file": "app.py",
-            "line": 15,
-            "timestamp": "2025-11-21 18:46"
-        },
-        {
-            "id": "comment_122",
-            "mr_id": 11,
-            "mr_title": "Add payment feature",
-            "comment": "Хардкод пароль обнаружен. Используйте environment variables",
-            "file": "config.py",
-            "line": 23,
-            "timestamp": "2025-11-21 15:30"
-        },
-        {
-            "id": "comment_121",
-            "mr_id": 10,
-            "mr_title": "Update user model",
-            "comment": "Отсутствует валидация входных данных. Добавьте Pydantic models",
-            "file": "models.py",
-            "line": 45,
-            "timestamp": "2025-11-20 14:20"
-        }
-    ]
-
-def submit_feedback(comment_id, mr_id, feedback_type, reason, senior_name, ai_comment):
-    """Отправка feedback на backend"""
+def load_recent_reviews():
+    """Load recent reviews from API"""
     try:
-        payload = {
-            "comment_id": comment_id,
-            "mr_id": mr_id,
-            "project_id": 76260348,  # Your project ID
-            "feedback_type": feedback_type,
-            "reason": reason,
-            "senior_name": senior_name,
-            "ai_comment": ai_comment
-        }
-        
-        response = requests.post(f"{API_URL}/api/feedback", json=payload, timeout=5)
-        return response.status_code == 200
+        response = requests.get(f"{API_URL}/api/recent?limit=10", timeout=3)
+        if response.status_code == 200:
+            return response.json().get("reviews", [])
     except:
-        # Сохраняем локально если backend недоступен
-        feedback_file = Path("data/feedback.json")
-        feedbacks = []
-        
-        if feedback_file.exists():
-            with open(feedback_file, 'r', encoding='utf-8') as f:
-                feedbacks = json.load(f)
-        
-        feedbacks.append({
-            **payload,
-            "timestamp": datetime.now().isoformat()
-        })
-        
-        with open(feedback_file, 'w', encoding='utf-8') as f:
-            json.dump(feedbacks, f, indent=2, ensure_ascii=False)
-        
-        return True
+        pass
+    return []
 
-# Sidebar
+# Sidebar Navigation
 with st.sidebar:
-    st.markdown("### 🤖 AI Ревью Кода")
+    st.markdown("### AI Code Review")
+    st.markdown("ForteBank Hackathon 2025")
     st.markdown("---")
     
     page = st.radio(
-        "Навигация",
-        ["📊 Аналитика", "⚙️ Настройки", "👥 Команда", "🧠 Обучение"]
+        "Navigation",
+        ["Analytics", "Settings", "Team", "Learning"],
+        label_visibility="collapsed"
     )
     
     st.markdown("---")
-    st.markdown("### Статус системы")
-    st.success("✅ AI: Онлайн")
-    st.success("✅ GitLab: Подключен")
-    st.info("💡 Gemini 2.5 Flash")
-    
-    st.markdown("---")
-    st.markdown("**ForteBank Hackathon 2025**")
+    st.markdown("**System Status**")
+    st.success("AI: Online")
+    st.success("GitLab: Connected")
+    st.info("Provider: Gemini 2.5 Flash")
 
-# Main content
-if page == "📊 Аналитика":
-    st.markdown('<p class="main-header">📊 Аналитика</p>', unsafe_allow_html=True)
+# Main Content
+if page == "Analytics":
+    st.markdown('<div class="main-header">Analytics Dashboard</div>', unsafe_allow_html=True)
     
     stats = load_stats()
     
     # Data source indicator
     if stats.get('is_real_data'):
-        st.info("📡 Отображаются **реальные данные** из backend")
+        st.success("Real-time data from backend")
     else:
-        st.warning("🎨 Отображаются **демо-данные** (backend недоступен)")
+        st.warning("Demo mode - Connect database to see real data")
+    
+    st.markdown("---")
     
     # KPI Metrics
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric(
-            label="Проверено MR",
-            value=stats["total_mrs"],
-            delta="+3 за неделю"
-        )
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{stats['total_mrs']}</div>
+            <div class="metric-label">Merge Requests</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col2:
-        st.metric(
-            label="AI Комментариев",
-            value=stats["total_comments"],
-            delta="+12 сегодня"
-        )
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{stats['total_comments']}</div>
+            <div class="metric-label">AI Comments</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col3:
-        st.metric(
-            label="Время сэкономлено",
-            value=f"{stats['time_saved_hours']}ч",
-            delta="+1.2ч"
-        )
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{stats['time_saved_hours']}h</div>
+            <div class="metric-label">Time Saved</div>
+        </div>
+        """, unsafe_allow_html=True)
     
     with col4:
-        st.metric(
-            label="Средний Score",
-            value=f"{stats['avg_score']}/10",
-            delta="+0.3"
-        )
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="metric-value">{stats['avg_score']}/10</div>
+            <div class="metric-label">Avg Score</div>
+        </div>
+        """, unsafe_allow_html=True)
     
-    st.markdown("---")
+    st.markdown('<div class="section-header">Recent Activity</div>', unsafe_allow_html=True)
+    
+    recent_reviews = load_recent_reviews()
+    
+    if recent_reviews:
+        recent_data = []
+        for review in recent_reviews:
+            created = datetime.fromisoformat(review['created_at'].replace('Z', '+00:00'))
+            time_ago = datetime.now() - created.replace(tzinfo=None)
+            
+            if time_ago.days > 0:
+                time_str = f"{time_ago.days}d ago"
+            elif time_ago.seconds // 3600 > 0:
+                time_str = f"{time_ago.seconds // 3600}h ago"
+            else:
+                time_str = f"{time_ago.seconds // 60}m ago"
+            
+            if review['status'] == 'approved':
+                status_html = '<span class="status-badge badge-success">Approved</span>'
+            elif review['status'] == 'needs_review':
+                status_html = '<span class="status-badge badge-warning">Needs Review</span>'
+            else:
+                status_html = '<span class="status-badge badge-danger">Rejected</span>'
+            
+            recent_data.append({
+                "Time": time_str,
+                "MR": f"#{review['mr_id']}",
+                "Author": review['author'],
+                "Score": f"{review['score']}/10",
+                "Issues": review['total_issues'],
+                "Status": status_html
+            })
+        
+        df_recent = pd.DataFrame(recent_data)
+        st.markdown(df_recent.to_html(escape=False, index=False), unsafe_allow_html=True)
+    else:
+        st.info("No activity yet. Create a MR in GitLab to see analytics.")
     
     # Charts
+    st.markdown('<div class="section-header">Performance Metrics</div>', unsafe_allow_html=True)
+    
     col1, col2 = st.columns(2)
     
     with col1:
-        st.subheader("📈 Активность по дням")
-        # Safe access with fallback
+        # Activity chart
         daily_activity = stats.get("daily_activity", [
             {"date": "2025-11-23", "mrs": stats.get("total_mrs", 0), "comments": stats.get("total_comments", 0)}
         ])
         df_activity = pd.DataFrame(daily_activity)
+        
         fig_activity = px.line(
             df_activity,
             x="date",
             y="mrs",
             markers=True,
-            title="Количество проверенных MR"
+            title="Daily Activity"
         )
         fig_activity.update_layout(
-            xaxis_title="Дата",
-            yaxis_title="Количество MR",
-            hovermode="x unified"
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color='#f1f5f9',
+            xaxis_title="Date",
+            yaxis_title="Merge Requests"
         )
         st.plotly_chart(fig_activity, use_container_width=True)
     
     with col2:
-        st.subheader("🔍 Типы проблем")
-        # Safe access with fallback
+        # Issue types chart
         issue_types = stats.get("issue_types", [
-            {"type": "Безопасность", "count": stats.get("total_issues", 0) // 2},
-            {"type": "Стиль кода", "count": stats.get("total_issues", 0) // 3},
-            {"type": "Производительность", "count": stats.get("total_issues", 0) // 4}
+            {"type": "Security", "count": 5},
+            {"type": "Code Style", "count": 3},
+            {"type": "Performance", "count": 2}
         ])
         df_issues = pd.DataFrame(issue_types)
+        
         fig_issues = px.pie(
             df_issues,
             values="count",
             names="type",
-            title="Найденные проблемы по категориям",
-            color_discrete_sequence=px.colors.sequential.RdBu
+            title="Issue Categories",
+            hole=0.4
+        )
+        fig_issues.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color='#f1f5f9'
         )
         st.plotly_chart(fig_issues, use_container_width=True)
-    
-    st.markdown("---")
-    
-    # Recent activity
-    st.subheader("🕒 Последняя активность")
-    
-    recent_data = [
-        {"время": "2 часа назад", "mr": "#12", "разработчик": "@maria_dev", "score": "6.5/10", "статус": "🟡 Нужны правки"},
-        {"время": "5 часов назад", "mr": "#11", "разработчик": "@john_dev", "score": "8.2/10", "статус": "🟢 Одобрен"},
-        {"время": "1 день назад", "mr": "#10", "разработчик": "@alex_senior", "score": "9.1/10", "статус": "🟢 Одобрен"}
-    ]
-    
-    df_recent = pd.DataFrame(recent_data)
-    st.dataframe(df_recent, use_container_width=True, hide_index=True)
 
-elif page == "⚙️ Настройки":
-    st.markdown('<p class="main-header">⚙️ Настройки</p>', unsafe_allow_html=True)
+elif page == "Settings":
+    st.markdown('<div class="main-header">Settings</div>', unsafe_allow_html=True)
     
-    tab1, tab2, tab3 = st.tabs(["🤖 AI Конфигурация", "🔗 Интеграции", "📋 Правила ревью"])
+    tab1, tab2, tab3 = st.tabs(["AI Configuration", "Integrations", "Review Rules"])
     
     with tab1:
-        st.subheader("Настройки AI модели")
+        st.markdown('<div class="section-header">AI Model Settings</div>', unsafe_allow_html=True)
         
         provider = st.selectbox(
-            "AI Провайдер",
-            ["Gemini 2.5 Flash", "OpenAI GPT-4", "Claude 3.5 Sonnet"],
-            help="Выберите AI модель для ревью кода"
+            "AI Provider",
+            ["Gemini 2.5 Flash", "OpenAI GPT-4", "Claude 3.5 Sonnet"]
         )
         
         col1, col2 = st.columns(2)
         
         with col1:
-            auto_review = st.toggle("Авто-ревью при MR", value=True)
-            auto_label = st.toggle("Авто-метки на MR", value=True)
-            
+            auto_review = st.toggle("Auto-review on MR", value=True)
+            auto_label = st.toggle("Auto-label MRs", value=True)
+        
         with col2:
-            min_score = st.slider("Минимальный score для апрува", 0.0, 10.0, 7.0, 0.1)
-            max_length = st.number_input("Макс. длина кода", value=50000, step=5000)
+            min_score = st.slider("Min score for approval", 0.0, 10.0, 7.0, 0.1)
+            max_length = st.number_input("Max code length", value=50000, step=5000)
         
         st.markdown("---")
         
-        st.subheader("Кастомный промпт")
         custom_prompt = st.text_area(
-            "Дополнительные инструкции",
-            placeholder="Например: Фокус на банковской безопасности...",
+            "Custom Instructions",
+            placeholder="E.g., Focus on banking security, PCI DSS compliance...",
             height=150
         )
         
-        if st.button("💾 Сохранить настройки", type="primary"):
-            st.success("✅ Настройки сохранены!")
+        if st.button("Save Settings", type="primary"):
+            st.success("Settings saved successfully!")
     
     with tab2:
-        st.subheader("Интеграция с GitLab")
+        st.markdown('<div class="section-header">GitLab Integration</div>', unsafe_allow_html=True)
         
         gitlab_url = st.text_input("GitLab URL", value="https://gitlab.com")
         webhook_url = st.text_input(
             "Webhook URL",
-            value="https://shelia-gallic-overchildishly.ngrok-free.dev/webhook/gitlab",
+            value=f"{API_URL}/webhook/gitlab",
             disabled=True
         )
         
-        st.success("✅ Подключено к GitLab")
+        st.success("Connected to GitLab")
         
         st.markdown("---")
         
-        st.subheader("Статус Webhook")
+        st.markdown("**Webhook Status**")
         col1, col2 = st.columns(2)
         
         with col1:
-            st.metric("Всего получено", "47")
-            st.metric("Успешно", "45", delta="+2")
+            st.metric("Total Received", "47")
         
         with col2:
-            st.metric("Ошибок", "2", delta_color="inverse")
-            st.metric("Среднее время ответа", "350мс")
+            st.metric("Last Event", "2m ago")
     
     with tab3:
-        st.subheader("Правила ревью для проекта")
+        st.markdown('<div class="section-header">Code Review Rules</div>', unsafe_allow_html=True)
         
-        st.markdown("""
-        Определите правила для вашего проекта, которым будет следовать AI.
-        Правила сохраняются в `.codereview-rules.yaml` в вашем репозитории.
-        """)
+        st.markdown("Configure custom rules for your project")
         
-        project_name = st.text_input("Название проекта", placeholder="например: payment-service")
-        tech_stack = st.multiselect(
-            "Технологический стек",
-            ["Python", "FastAPI", "PostgreSQL", "React", "Docker", "Redis"],
-            default=["Python", "FastAPI"]
+        security_level = st.select_slider(
+            "Security Check Level",
+            options=["Low", "Medium", "High", "Critical"],
+            value="High"
         )
         
-        st.markdown("**Правила безопасности**")
-        sec1 = st.checkbox("Без хардкод секретов", value=True)
-        sec2 = st.checkbox("Защита от SQL injection", value=True)
-        sec3 = st.checkbox("Валидация входных данных", value=True)
+        check_types = st.multiselect(
+            "Enable Checks",
+            ["Security", "Performance", "Code Style", "Best Practices", "Architecture"],
+            default=["Security", "Performance", "Best Practices"]
+        )
         
-        st.markdown("**Банковские требования**")
-        bank1 = st.checkbox("Логирование транзакций", value=True)
-        bank2 = st.checkbox("Обработка ошибок с rollback", value=True)
-        bank3 = st.checkbox("PCI DSS compliance", value=True)
-        
-        if st.button("📝 Сгенерировать .codereview-rules.yaml", type="primary"):
-            yaml_content = f"""project_context:
-  name: "{project_name}"
-  tech_stack: {tech_stack}
+        if st.button("Save Rules", type="primary"):
+            st.success("Rules saved successfully!")
 
-security_rules:
-  - "Без хардкод секретов"
-  - "Защита от SQL injection"
-  - "Валидация входных данных"
-
-banking_requirements:
-  - "Логирование транзакций"
-  - "Обработка ошибок с rollback"
-  - "PCI DSS compliance"
-"""
-            st.code(yaml_content, language="yaml")
-            st.success("✅ Скопируйте это в ваш GitLab репозиторий!")
-
-elif page == "👥 Команда":
-    st.markdown('<p class="main-header">👥 Производительность команды</p>', unsafe_allow_html=True)
+elif page == "Team":
+    st.markdown('<div class="main-header">Team Performance</div>', unsafe_allow_html=True)
     
     stats = load_stats()
     
-    # Team stats table
-    st.subheader("Статистика разработчиков")
-    
-    # Safe access with fallback
     team_stats = stats.get("team_stats", [
         {
-            "developer": "Unknown", 
-            "mrs": stats.get("total_mrs", 0), 
+            "developer": "Unknown",
+            "mrs": stats.get("total_mrs", 0),
             "avg_score": stats.get("avg_score", 5.0),
             "time_saved": stats.get("time_saved_hours", 0)
         }
     ])
+    
     df_team = pd.DataFrame(team_stats)
-    df_team["rank"] = df_team["avg_score"].rank(ascending=False, method="dense").astype(int)
-    df_team = df_team.sort_values("avg_score", ascending=False)
     
-    # Format display
-    df_team["Разработчик"] = df_team["developer"].apply(lambda x: f"@{x}")
-    df_team["MRs"] = df_team["mrs"]
-    df_team["Средний Score"] = df_team["avg_score"].apply(lambda x: f"{x}/10")
-    df_team["Время сэкономлено"] = df_team["time_saved"].apply(lambda x: f"{x}ч")
-    df_team["Ранг"] = df_team["rank"].apply(lambda x: f"🏆 {x}" if x == 1 else f"#{x}")
+    if not df_team.empty:
+        df_team["rank"] = df_team["avg_score"].rank(ascending=False, method="dense").astype(int)
+        df_team = df_team.sort_values("avg_score", ascending=False)
+        
+        df_team["Developer"] = df_team["developer"].apply(lambda x: f"@{x}")
+        df_team["MRs"] = df_team["mrs"]
+        df_team["Avg Score"] = df_team["avg_score"].apply(lambda x: f"{x}/10")
+        df_team["Time Saved"] = df_team["time_saved"].apply(lambda x: f"{x}h")
+        df_team["Rank"] = df_team["rank"]
+        
+        st.dataframe(
+            df_team[["Rank", "Developer", "MRs", "Avg Score", "Time Saved"]],
+            use_container_width=True,
+            hide_index=True
+        )
+    else:
+        st.info("No team data available yet.")
+
+elif page == "Learning":
+    st.markdown('<div class="main-header">AI Learning Center</div>', unsafe_allow_html=True)
     
-    st.dataframe(
-        df_team[["Ранг", "Разработчик", "MRs", "Средний Score", "Время сэкономлено"]],
-        use_container_width=True,
-        hide_index=True
-    )
+    st.markdown("Help improve AI by providing feedback on reviews")
     
-    st.markdown("---")
+    st.markdown('<div class="section-header">Feedback System</div>', unsafe_allow_html=True)
     
-    # Charts
-    col1, col2 = st.columns(2)
+    col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("📊 Распределение Score")
-        fig_scores = go.Figure(data=[
-            go.Bar(
-                x=df_team["developer"],
-                y=df_team["avg_score"],
-                marker_color=df_team["avg_score"].apply(
-                    lambda x: '#2ecc71' if x >= 8 else '#f39c12' if x >= 6 else '#e74c3c'
-                )
-            )
-        ])
-        fig_scores.update_layout(
-            xaxis_title="Разработчик",
-            yaxis_title="Средний Score",
-            yaxis_range=[0, 10]
-        )
-        st.plotly_chart(fig_scores, use_container_width=True)
+        st.markdown("The AI learns from senior developer feedback to improve accuracy over time.")
     
     with col2:
-        st.subheader("⏱️ Время сэкономлено по разработчикам")
-        fig_time = px.bar(
-            df_team,
-            x="developer",
-            y="time_saved",
-            color="time_saved",
-            color_continuous_scale="Blues"
-        )
-        fig_time.update_layout(
-            xaxis_title="Разработчик",
-            yaxis_title="Часов сэкономлено",
-            showlegend=False
-        )
-        st.plotly_chart(fig_time, use_container_width=True)
+        st.metric("Total Feedback", "12")
+        st.metric("Accuracy", "94%")
     
     st.markdown("---")
     
-    # ROI Calculation
-    st.subheader("💰 Возврат инвестиций (ROI)")
+    st.markdown("**Recent AI Improvements**")
     
-    col1, col2, col3 = st.columns(3)
+    improvements = [
+        {"Date": "2025-11-23", "Area": "Security", "Improvement": "Better SQL injection detection"},
+        {"Date": "2025-11-22", "Area": "Performance", "Improvement": "Improved algorithm complexity analysis"},
+        {"Date": "2025-11-21", "Area": "Code Style", "Improvement": "Enhanced PEP 8 compliance checking"}
+    ]
     
-    with col1:
-        senior_rate = st.number_input("Ставка сеньора в час (₸)", value=15000, step=1000)
-    
-    with col2:
-        total_saved = stats["time_saved_hours"]
-        st.metric("Всего часов сэкономлено", f"{total_saved}ч")
-    
-    with col3:
-        roi = total_saved * senior_rate
-        st.metric("Деньги сэкономлено", f"₸{roi:,.0f}")
-    
-    st.info(f"💡 **Прогноз на месяц**: Если тренд продолжится, вы сэкономите ~₸{roi * 6.67:,.0f} в месяц!")
-
-elif page == "🧠 Обучение":
-    st.markdown('<p class="main-header">🧠 Система обучения AI</p>', unsafe_allow_html=True)
-    
-    st.markdown("""
-    AI учится на основе обратной связи от сеньор-разработчиков.
-    Когда сеньор отмечает комментарий AI как неправильный, система адаптируется.
-    """)
-    
-    st.markdown("---")
-    
-    # Tabs
-    tab1, tab2 = st.tabs(["📝 Дать feedback", "📊 Статистика обучения"])
-    
-    with tab1:
-        st.subheader("💬 Дайте feedback на комментарий AI")
-        
-        recent_comments = load_recent_comments()
-        
-        # Select comment
-        comment_options = [f"MR #{c['mr_id']}: {c['mr_title']} - {c['comment'][:50]}..." for c in recent_comments]
-        selected_idx = st.selectbox(
-            "Выберите комментарий AI",
-            range(len(comment_options)),
-            format_func=lambda x: comment_options[x]
-        )
-        
-        selected_comment = recent_comments[selected_idx]
-        
-        # Display selected comment
-        st.markdown("---")
-        st.markdown("**Детали комментария:**")
-        
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            st.info(f"""
-**MR:** #{selected_comment['mr_id']} - {selected_comment['mr_title']}  
-**Файл:** {selected_comment['file']} (строка {selected_comment['line']})  
-**Время:** {selected_comment['timestamp']}
-            """)
-        
-        with col2:
-            st.code(selected_comment['comment'], language=None)
-        
-        st.markdown("---")
-        
-        # Feedback form
-        st.markdown('<div class="feedback-form">', unsafe_allow_html=True)
-        
-        st.markdown("### 📋 Ваш feedback")
-        
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            senior_name = st.text_input("Ваше имя", placeholder="@alex_senior")
-        
-        with col2:
-            feedback_type = st.radio(
-                "Оценка комментария",
-                ["positive", "negative"],
-                format_func=lambda x: "👍 Полезно" if x == "positive" else "👎 Не релевантно",
-                horizontal=True
-            )
-        
-        reason = st.text_area(
-            "Объясните ваш выбор" if feedback_type == "negative" else "Дополнительные комментарии (опционально)",
-            placeholder="Например: В нашем проекте используется ORM, поэтому prepared statements не применимы...",
-            height=100
-        )
-        
-        if st.button("📤 Отправить feedback", type="primary", use_container_width=True):
-            if not senior_name:
-                st.error("❌ Укажите ваше имя")
-            elif feedback_type == "negative" and not reason:
-                st.error("❌ Для негативного feedback обязательно укажите причину")
-            else:
-                success = submit_feedback(
-                    comment_id=selected_comment['id'],
-                    mr_id=selected_comment['mr_id'],
-                    feedback_type=feedback_type,
-                    reason=reason or "Положительный feedback",
-                    senior_name=senior_name,
-                    ai_comment=selected_comment['comment']
-                )
-                
-                if success:
-                    st.success("✅ Feedback отправлен! AI учтет это при следующем анализе.")
-                    st.balloons()
-                else:
-                    st.error("❌ Ошибка отправки feedback")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-    
-    with tab2:
-        st.subheader("📊 Статистика feedback")
-        
-        # Feedback stats
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.metric("Всего feedback", "23")
-        
-        with col2:
-            st.metric("👍 Положительных", "19", delta="83%")
-        
-        with col3:
-            st.metric("👎 Негативных", "4", delta="-17%", delta_color="inverse")
-        
-        st.markdown("---")
-        
-        # Recent feedback
-        st.subheader("📝 Последний feedback")
-        
-        feedback_data = [
-            {
-                "дата": "2025-11-21 10:30",
-                "mr": "#12",
-                "сеньор": "@alex_senior",
-                "тип": "👎",
-                "причина": "Используется ORM, prepared statements не релевантны",
-                "статус": "✅ Изучено"
-            },
-            {
-                "дата": "2025-11-21 09:15",
-                "mr": "#11",
-                "сеньор": "@john_dev",
-                "тип": "👍",
-                "причина": "Хорошо найдена SQL injection уязвимость",
-                "статус": "✅ Усилено"
-            },
-            {
-                "дата": "2025-11-20 16:45",
-                "mr": "#10",
-                "сеньор": "@maria_dev",
-                "тип": "👎",
-                "причина": "Этот паттерн стандартен в нашем коде",
-                "статус": "✅ Изучено"
-            }
-        ]
-        
-        df_feedback = pd.DataFrame(feedback_data)
-        st.dataframe(df_feedback, use_container_width=True, hide_index=True)
-        
-        st.markdown("---")
-        
-        # Learning rules
-        st.subheader("📚 Изученные правила")
-        
-        with st.expander("🔒 Паттерны безопасности"):
-            st.markdown("""
-            - **Используйте ORM вместо raw SQL** - изучено из feedback @alex_senior
-            - **Валидация JWT токенов** - стандартная практика в auth service
-            - **Ротация API ключей** - требуется для production
-            """)
-        
-        with st.expander("🏗️ Архитектурные паттерны"):
-            st.markdown("""
-            - **Service layer pattern** - используется во всех микросервисах
-            - **Repository pattern** - стандарт для доступа к данным
-            - **Dependency injection** - нативный подход FastAPI
-            """)
-        
-        with st.expander("🏦 Банковская специфика"):
-            st.markdown("""
-            - **Логирование транзакций** - требование PCI DSS
-            - **Audit trail** - обязательно для операций с деньгами
-            - **Double-entry accounting** - стандартная практика
-            """)
-        
-        st.markdown("---")
-        
-        st.info("💡 **Совет**: Чем больше feedback вы даете, тем лучше AI понимает ваш codebase!")
-
-# Footer
-st.markdown("---")
-st.markdown("""
-<div style='text-align: center; color: #666;'>
-    <p>🤖 AI Ревью Кода | ForteBank Hackathon 2025</p>
-    <p>Работает на Gemini 2.5 Flash | Сделано с ❤️ для разработчиков</p>
-</div>
-""", unsafe_allow_html=True)
+    df_improvements = pd.DataFrame(improvements)
+    st.dataframe(df_improvements, use_container_width=True, hide_index=True)

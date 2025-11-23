@@ -86,7 +86,7 @@ class GitLabClient:
             raise
     
     def _format_review_summary(self, analysis: Dict[str, Any]) -> str:
-        """Format analysis result into markdown summary"""
+        """Format analysis result into markdown summary with ALL issues"""
         
         score = analysis['score']
         recommendation = analysis['recommendation']
@@ -94,6 +94,15 @@ class GitLabClient:
         medium = analysis['medium_count']
         low = analysis['low_count']
         summary = analysis['summary']
+        issues = analysis.get('issues', [])
+        
+        # Calculate realistic time saved based on lines changed
+        lines_changed = analysis.get('lines_changed', 0)
+        if lines_changed > 0:
+            # Formula: 0.5 min per line for manual review
+            estimated_time = max(5, min(int(lines_changed * 0.5), 120))
+        else:
+            estimated_time = 15  # Default for small changes
         
         # Emoji based on score
         if score >= 8.0:
@@ -123,9 +132,59 @@ class GitLabClient:
 
 ### 📝 Резюме:
 {summary}
+"""
+        
+        # Add ALL issues details in ONE comment
+        if issues:
+            markdown += "\n### 🔍 Детальный анализ:\n\n"
+            
+            for idx, issue in enumerate(issues, 1):
+                severity = issue.get('severity', 'info')
+                issue_type = issue.get('issue_type', 'best_practice')
+                
+                severity_emoji = {
+                    "critical": "🔴",
+                    "medium": "🟡",
+                    "low": "🟢",
+                    "info": "💡"
+                }.get(severity, "💡")
+                
+                type_emoji = {
+                    "security": "🔐",
+                    "performance": "⚡",
+                    "bug": "🐛",
+                    "code_style": "📖",
+                    "best_practice": "✨",
+                    "architecture": "🏗️"
+                }.get(issue_type, "📝")
+                
+                file_path = issue.get('file_path', 'unknown')
+                line = issue.get('line', '')
+                location = f"`{file_path}:{line}`" if line else f"`{file_path}`"
+                
+                markdown += f"""#### {idx}. {severity_emoji} {issue.get('description', 'Проблема не указана')} {type_emoji}
 
-### ⏱️ Экономия времени:
-Автоматический анализ сэкономил **~{analysis.get('estimated_time_saved', 90)} минут** времени сеньора.
+**Расположение:** {location}
+
+**Рекомендация:**
+{issue.get('suggestion', 'Рекомендация не указана')}
+
+"""
+                
+                if issue.get('code_snippet'):
+                    markdown += f"""**Код:**
+```
+{issue['code_snippet']}
+```
+
+"""
+                
+                markdown += "---\n\n"
+        
+        markdown += f"""### ⏱️ Экономия времени:
+Автоматический анализ сэкономил **~{estimated_time} минут** времени сеньора.
+
+*Изменено строк: {lines_changed} • Проверено AI за несколько секунд*
 
 ---
 *Это автоматическая проверка от AI Code Review Assistant*
@@ -191,50 +250,27 @@ class GitLabClient:
         mr_iid: int,
         analysis_result: Dict[str, Any]
     ):
-        """Post review comments to GitLab MR"""
+        """Post ONE comprehensive review comment to GitLab MR"""
         try:
             project = self.get_project(project_id)
             mr = project.mergerequests.get(mr_iid)
             
-            # Post summary comment
+            # Calculate lines changed for time estimation
+            changes = mr.changes()
+            lines_changed = 0
+            for change in changes.get('changes', []):
+                diff = change.get('diff', '')
+                # Count added/removed lines (lines starting with + or -)
+                lines_changed += len([l for l in diff.split('\n') if l.startswith('+') or l.startswith('-')])
+            
+            analysis_result['lines_changed'] = lines_changed
+            
+            # Post ONE comprehensive comment with ALL issues
             summary_comment = self._format_review_summary(analysis_result)
             mr.notes.create({'body': summary_comment})
-            logger.info("✅ Posted summary comment")
             
-            # Post individual issue comments
-            issues_posted = 0
-            for issue in analysis_result.get('issues', []):
-                # Only post critical and medium issues as comments
-                # (to avoid spam)
-                if issue.get('severity') in ['critical', 'medium']:
-                    comment_text = self._format_issue_comment(issue)
-                    
-                    # Try to post as line comment if line number exists
-                    if issue.get('line'):
-                        try:
-                            # Create discussion on specific line
-                            mr.discussions.create({
-                                'body': comment_text,
-                                'position': {
-                                    'base_sha': mr.diff_refs['base_sha'],
-                                    'start_sha': mr.diff_refs['start_sha'],
-                                    'head_sha': mr.diff_refs['head_sha'],
-                                    'position_type': 'text',
-                                    'new_path': issue.get('file_path'),
-                                    'new_line': issue.get('line')
-                                }
-                            })
-                        except Exception as e:
-                            # If line comment fails, post as general comment
-                            logger.warning(f"⚠️ Failed to post line comment: {str(e)}")
-                            mr.notes.create({'body': f"**{issue.get('file_path')}:{issue.get('line')}**\n\n{comment_text}"})
-                    else:
-                        # Post as general comment
-                        mr.notes.create({'body': f"**{issue.get('file_path')}**\n\n{comment_text}"})
-                    
-                    issues_posted += 1
-            
-            logger.info(f"✅ Posted {issues_posted} issue comments")
+            total_issues = analysis_result.get('critical_count', 0) + analysis_result.get('medium_count', 0) + analysis_result.get('low_count', 0)
+            logger.info(f"✅ Posted comprehensive review comment with {total_issues} issues")
             
         except Exception as e:
             logger.error(f"❌ Failed to post comments: {str(e)}")
