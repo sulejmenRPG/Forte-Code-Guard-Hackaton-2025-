@@ -85,15 +85,21 @@ class GeminiProvider(LLMProvider):
         """Analyze code using Gemini"""
         try:
             logger.info("🤖 Calling Gemini API...")
+            logger.info(f"📝 Prompt length: {len(prompt)} chars")
             
             response = self.model.generate_content(prompt)
             content = response.text
+            
+            # Log raw response
+            logger.info(f"📦 Raw Gemini response (first 500 chars): {content[:500]}")
             
             # Try to extract JSON from response
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
                 content = content.split("```")[1].split("```")[0].strip()
+            
+            logger.info(f"📦 Extracted JSON (first 300 chars): {content[:300]}")
             
             result = json.loads(content)
             
