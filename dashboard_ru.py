@@ -630,11 +630,35 @@ st.markdown("""
         border: 1px solid #4a5568 !important;
     }
     
-    /* Code block text */
+    /* Code block text - ALL STATES */
     .stCode code,
-    pre code {
+    pre code,
+    code,
+    .stCode code *,
+    pre code * {
         color: #e2e8f0 !important;
         background-color: transparent !important;
+    }
+    
+    /* CRITICAL: Force color on hover, focus, active */
+    .stCode:hover code,
+    .stCode:focus code,
+    .stCode:active code,
+    pre:hover code,
+    pre:focus code,
+    code:hover,
+    code:focus,
+    .stCode:hover,
+    .stCode:focus {
+        color: #e2e8f0 !important;
+        background-color: #0f172a !important;
+    }
+    
+    /* Force all nested elements */
+    .stCode *, 
+    pre *,
+    code * {
+        color: #e2e8f0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
